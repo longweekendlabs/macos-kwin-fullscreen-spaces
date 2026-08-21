@@ -1,0 +1,8 @@
+# Local/editor files
+.idea/
+.vscode/
+*.swp
+
+# Backups and generated package artifacts
+*.backup
+*.bak
