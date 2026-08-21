@@ -217,6 +217,22 @@ function enterFullscreenSpace(window) {
     session.internalFullscreenChange = false;
 }
 
+function pointerIsOverMaximizeButton(window) {
+    if (!window || !window.frameGeometry || !workspace.cursorPos) {
+        return false;
+    }
+
+    var frame = window.frameGeometry;
+    var cursor = workspace.cursorPos;
+    var right = frame.x + frame.width;
+    var top = frame.y;
+
+    // Breeze-style title bars place maximize immediately to the left of the
+    // close button. Keep a generous DPI-independent hit area for other themes.
+    return cursor.y >= top && cursor.y <= top + 50 &&
+        cursor.x >= right - 95 && cursor.x < right - 35;
+}
+
 function watchWindow(window) {
     if (!window || !window.normalWindow) {
         return;
@@ -224,16 +240,30 @@ function watchWindow(window) {
 
     var pendingFullMaximize = false;
     var suppressMaximize = false;
+    var preserveButtonMaximize = false;
 
     window.maximizedAboutToChange.connect(function(mode) {
         if (suppressMaximize) {
             return;
         }
+
+        if ((mode & 3) === 3 && pointerIsOverMaximizeButton(window)) {
+            pendingFullMaximize = false;
+            preserveButtonMaximize = true;
+            return;
+        }
+
         pendingFullMaximize = ((mode & 3) === 3);
     });
 
     window.maximizedChanged.connect(function() {
         if (suppressMaximize || getSession(window)) {
+            return;
+        }
+
+        if (preserveButtonMaximize) {
+            preserveButtonMaximize = false;
+            pendingFullMaximize = false;
             return;
         }
 
