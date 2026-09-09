@@ -6,6 +6,7 @@ When a supported window is maximized, the script:
 
 - creates a dedicated virtual desktop for the window;
 - moves the window there and enters real fullscreen;
+- keeps browser tabs, navigation, and the URL bar visible by using borderless maximization instead of real fullscreen for browsers;
 - exposes Overview from the top edge while that Space exists;
 - lets the window be moved to another virtual desktop from Overview;
 - exits fullscreen, removes the temporary desktop, and closes Overview after a successful move;
