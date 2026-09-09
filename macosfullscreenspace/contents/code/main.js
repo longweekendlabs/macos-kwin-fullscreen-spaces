@@ -73,7 +73,8 @@ function isBrowserWindow(window) {
         identity.indexOf("brave") !== -1 ||
         identity.indexOf("vivaldi") !== -1 ||
         identity.indexOf("opera") !== -1 ||
-        identity.indexOf("zen") !== -1;
+        identity.indexOf("zen") !== -1 ||
+        identity.indexOf("dolphin") !== -1;
 }
 
 function isManagedSpaceWindow(session, window) {
@@ -250,9 +251,10 @@ function enterFullscreenSpace(window) {
     workspace.activeWindow = window;
 
     if (session.browserChromeMode) {
-        // Real KWin fullscreen makes browsers interpret this as F11 and hide
-        // tabs, navigation, and the URL bar. Use a borderless maximized window
-        // on the dedicated desktop instead, keeping browser chrome available.
+        // Real KWin fullscreen makes browsers interpret this as F11 and hides
+        // their tabs/navigation; it also makes Dolphin lose its normal window
+        // controls. Use a borderless maximized window on the dedicated desktop
+        // instead, keeping each application's own chrome available.
         window.noBorder = true;
         window.setMaximize(true, true);
     } else {
