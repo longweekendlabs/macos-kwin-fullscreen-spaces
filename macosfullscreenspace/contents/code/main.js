@@ -1,6 +1,11 @@
 var sessions = [];
 var overviewEdgesRegistered = false;
 
+// KWin can preserve a script-owned edge callback across a package upgrade. Clear
+// this script's old top-edge callback before rebuilding sessions below, so a
+// blue edge affordance can never survive after the last Space has gone away.
+unregisterScreenEdge(KWin.ElectricTop);
+
 function updateOverviewEdges() {
     if (sessions.length > 0 && !overviewEdgesRegistered) {
         registerScreenEdge(KWin.ElectricTop, showOverviewFromFullscreenEdge);
