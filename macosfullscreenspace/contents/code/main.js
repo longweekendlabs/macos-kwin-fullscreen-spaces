@@ -297,7 +297,20 @@ function watchWindow(window) {
     });
 
     window.maximizedChanged.connect(function() {
-        if (suppressMaximize || getSession(window)) {
+        if (suppressMaximize) {
+            return;
+        }
+
+        var existingSession = getSession(window);
+        if (existingSession) {
+            // Browser Spaces intentionally keep browser chrome visible by using a
+            // borderless maximized window instead of KWin's real fullscreen.
+            // A second title-bar double-click therefore arrives as an unmaximize
+            // event. Treat it exactly like leaving a macOS fullscreen Space.
+            if (existingSession.browserChromeMode &&
+                !window.maximizedVertically && !window.maximizedHorizontally) {
+                leaveFullscreenSpaceNormally(existingSession, false);
+            }
             return;
         }
 
