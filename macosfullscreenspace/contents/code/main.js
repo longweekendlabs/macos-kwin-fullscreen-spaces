@@ -60,25 +60,8 @@ function desktopContainsOtherWindows(desktop, exceptWindow) {
     return false;
 }
 
-function isBrowserWindow(window) {
-    if (!window) {
-        return false;
-    }
-
-    var identity = ((window.resourceClass || "") + " " +
-        (window.resourceName || "")).toLowerCase();
-    return identity.indexOf("firefox") !== -1 ||
-        identity.indexOf("chrom") !== -1 ||
-        identity.indexOf("microsoft-edge") !== -1 ||
-        identity.indexOf("brave") !== -1 ||
-        identity.indexOf("vivaldi") !== -1 ||
-        identity.indexOf("opera") !== -1 ||
-        identity.indexOf("zen") !== -1 ||
-        identity.indexOf("dolphin") !== -1;
-}
-
 function isManagedSpaceWindow(session, window) {
-    return !!window && (window.fullScreen || session.browserChromeMode);
+    return !!window && (window.fullScreen || session.spaceMaximizeMode);
 }
 
 function leaveFullscreenSpaceNormally(session, windowClosed) {
@@ -98,7 +81,7 @@ function leaveFullscreenSpaceNormally(session, windowClosed) {
         }
         session.internalFullscreenChange = false;
 
-        if (session.browserChromeMode) {
+        if (session.spaceMaximizeMode) {
             window.noBorder = session.originalNoBorder;
         }
 
@@ -162,7 +145,7 @@ function leaveFullscreenSpaceAfterManualMove(session, movedDesktops) {
         }
         session.internalFullscreenChange = false;
 
-        if (session.browserChromeMode) {
+        if (session.spaceMaximizeMode) {
             window.noBorder = session.originalNoBorder;
         }
 
@@ -209,7 +192,7 @@ function enterFullscreenSpace(window) {
     }
 
     var originalOnAllDesktops = window.onAllDesktops;
-    var browserChromeMode = isBrowserWindow(window);
+    var spaceMaximizeMode = true;
     var originalNoBorder = window.noBorder;
     var oldCount = workspace.desktops.length;
 
@@ -234,7 +217,7 @@ function enterFullscreenSpace(window) {
         fullscreenDesktop: fullscreenDesktop,
         originalDesktops: originalDesktops,
         originalOnAllDesktops: originalOnAllDesktops,
-        browserChromeMode: browserChromeMode,
+        spaceMaximizeMode: spaceMaximizeMode,
         originalNoBorder: originalNoBorder,
         cleaningUp: false,
         internalDesktopMove: true,
@@ -250,18 +233,11 @@ function enterFullscreenSpace(window) {
     workspace.currentDesktop = fullscreenDesktop;
     workspace.activeWindow = window;
 
-    if (session.browserChromeMode) {
-        // Real KWin fullscreen makes browsers interpret this as F11 and hides
-        // their tabs/navigation; it also makes Dolphin lose its normal window
-        // controls. Use a borderless maximized window on the dedicated desktop
-        // instead, keeping each application's own chrome available.
-        window.noBorder = true;
-        window.setMaximize(true, true);
-    } else {
-        session.internalFullscreenChange = true;
-        window.fullScreen = true;
-        session.internalFullscreenChange = false;
-    }
+    // A dedicated desktop plus borderless maximization keeps app controls and
+    // Plasma's bottom panel available. Unlike real KWin fullscreen, it does
+    // not turn browsers into F11 mode or suppress the panel for Konsole.
+    window.noBorder = true;
+    window.setMaximize(true, true);
 }
 
 function pointerIsOverMaximizeButton(window) {
@@ -310,11 +286,10 @@ function watchWindow(window) {
 
         var existingSession = getSession(window);
         if (existingSession) {
-            // Browser Spaces intentionally keep browser chrome visible by using a
-            // borderless maximized window instead of KWin's real fullscreen.
-            // A second title-bar double-click therefore arrives as an unmaximize
-            // event. Treat it exactly like leaving a macOS fullscreen Space.
-            if (existingSession.browserChromeMode &&
+            // Spaces intentionally use borderless maximization instead of KWin's
+            // real fullscreen, so a second title-bar double-click arrives as an
+            // unmaximize event.
+            if (existingSession.spaceMaximizeMode &&
                 !window.maximizedVertically && !window.maximizedHorizontally) {
                 leaveFullscreenSpaceNormally(existingSession, false);
             }
@@ -414,7 +389,7 @@ function restoreExistingFullscreenSpaces() {
             var window = windows[w];
             if (!window || window.deleted || !window.desktops ||
                 (!window.fullScreen &&
-                    !(isBrowserWindow(window) && window.maximizedVertically && window.maximizedHorizontally))) {
+                    !(window.maximizedVertically && window.maximizedHorizontally))) {
                 continue;
             }
 
@@ -435,7 +410,7 @@ function restoreExistingFullscreenSpaces() {
                 fullscreenDesktop: fullscreenDesktop,
                 originalDesktops: originalDesktops,
                 originalOnAllDesktops: false,
-                browserChromeMode: isBrowserWindow(window) && !window.fullScreen,
+                spaceMaximizeMode: !window.fullScreen,
                 originalNoBorder: false,
                 cleaningUp: false,
                 internalDesktopMove: false,
