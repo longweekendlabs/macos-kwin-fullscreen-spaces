@@ -2,17 +2,19 @@
 
 A KDE Plasma 6 KWin script that gives maximized windows a macOS-style fullscreen Space.
 
-When a supported window is maximized, the script:
+Click a supported window's square maximize button to open a dedicated Space. Double-click its title bar to maximize on the current desktop, matching macOS's Fill title-bar setting.
+
+When you click the square button, the script:
 
 - creates a dedicated virtual desktop for the window;
 - moves the window there and uses borderless maximization rather than real KWin fullscreen;
 - preserves every app's own controls and leaves the Plasma bottom panel available;
-- exposes Overview from the top edge while that Space exists;
+- exposes Overview from the top-left corner while a managed Space exists;
 - lets the window be moved to another virtual desktop from Overview;
 - exits the Space, removes the temporary desktop, and closes Overview after a successful move;
 - provides `Meta+Shift+F` to leave the Space manually.
 
-The top-edge affordance is registered only while a managed fullscreen Space exists. The script does not add a permanent top-edge trigger to ordinary desktops.
+The top-left corner is registered only while a managed Space exists. The script does not register the top-center edge.
 
 ## Requirements
 

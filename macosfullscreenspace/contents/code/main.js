@@ -5,13 +5,14 @@ var overviewEdgesRegistered = false;
 // this script's old top-edge callback before rebuilding sessions below, so a
 // blue edge affordance can never survive after the last Space has gone away.
 unregisterScreenEdge(KWin.ElectricTop);
+unregisterScreenEdge(KWin.ElectricTopLeft);
 
 function updateOverviewEdges() {
     if (sessions.length > 0 && !overviewEdgesRegistered) {
-        registerScreenEdge(KWin.ElectricTop, showOverviewFromFullscreenEdge);
+        registerScreenEdge(KWin.ElectricTopLeft, showOverviewFromFullscreenEdge);
         overviewEdgesRegistered = true;
     } else if (sessions.length === 0 && overviewEdgesRegistered) {
-        unregisterScreenEdge(KWin.ElectricTop);
+        unregisterScreenEdge(KWin.ElectricTopLeft);
         overviewEdgesRegistered = false;
     }
 }
@@ -251,7 +252,8 @@ function pointerIsOverMaximizeButton(window) {
     var top = frame.y;
 
     // Breeze-style title bars place maximize immediately to the left of the
-    // close button. Keep a generous DPI-independent hit area for other themes.
+    // close button. This hit test distinguishes the Space button from a
+    // title-bar double-click, which should only fill the current desktop.
     return cursor.y >= top && cursor.y <= top + 50 &&
         cursor.x >= right - 95 && cursor.x < right - 35;
 }
@@ -263,20 +265,13 @@ function watchWindow(window) {
 
     var pendingFullMaximize = false;
     var suppressMaximize = false;
-    var preserveButtonMaximize = false;
 
     window.maximizedAboutToChange.connect(function(mode) {
         if (suppressMaximize) {
             return;
         }
 
-        if ((mode & 3) === 3 && pointerIsOverMaximizeButton(window)) {
-            pendingFullMaximize = false;
-            preserveButtonMaximize = true;
-            return;
-        }
-
-        pendingFullMaximize = ((mode & 3) === 3);
+        pendingFullMaximize = ((mode & 3) === 3) && pointerIsOverMaximizeButton(window);
     });
 
     window.maximizedChanged.connect(function() {
@@ -290,19 +285,13 @@ function watchWindow(window) {
             // real fullscreen, so a second title-bar double-click arrives as an
             // unmaximize event.
             if (existingSession.spaceMaximizeMode &&
-                !window.maximizedVertically && !window.maximizedHorizontally) {
+                (window.maximizeMode & 3) === 0) {
                 leaveFullscreenSpaceNormally(existingSession, false);
             }
             return;
         }
 
-        if (preserveButtonMaximize) {
-            preserveButtonMaximize = false;
-            pendingFullMaximize = false;
-            return;
-        }
-
-        var isFullMax = pendingFullMaximize || (window.maximizedVertically && window.maximizedHorizontally);
+        var isFullMax = pendingFullMaximize && (window.maximizeMode & 3) === 3;
         pendingFullMaximize = false;
 
         if (!isFullMax) {
@@ -389,7 +378,7 @@ function restoreExistingFullscreenSpaces() {
             var window = windows[w];
             if (!window || window.deleted || !window.desktops ||
                 (!window.fullScreen &&
-                    !(window.maximizedVertically && window.maximizedHorizontally))) {
+                    !((window.maximizeMode & 3) === 3))) {
                 continue;
             }
 
@@ -508,7 +497,7 @@ workspace.windowActivated.connect(function(window) {
 });
 
 // The Overview edge is intentionally owned by this script. This keeps the
-// macOS-style top affordance absent on ordinary virtual desktops while still
+// top-left corner affordance absent when no managed Space exists while still
 // making it available inside a managed fullscreen Space.
 function showOverviewFromFullscreenEdge() {
     restoreExistingFullscreenSpaces();
